@@ -66,9 +66,10 @@ public final class LoyalTridentStorage extends PersistentState {
 
     public void recallTridents(PlayerEntity player) {
         for (TridentEntity trident : this.tridents.getOrDefault(player.getUuid(), OwnedTridents.EMPTY)) {
-            ((LoyalTrident) trident).loyaltrident_wakeUp();
+            float initialDistance = trident.distanceTo(player);
+            ((LoyalTrident) trident).loyaltrident_wakeUp(initialDistance > 20);
 
-            if (trident.distanceTo(player) > 64) {
+            if (initialDistance > 64) {
                 // reposition the trident at the same angle to the player but only 64 blocks away
                 Vec3d newPos = player.getPos().add(trident.getPos().subtract(player.getPos()).normalize().multiply(64));
                 trident.resetPosition(newPos.x, newPos.y, newPos.z);

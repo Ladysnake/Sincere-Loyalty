@@ -18,9 +18,12 @@
 package io.github.ladysnake.sincereloyalty.mixin;
 
 import io.github.ladysnake.sincereloyalty.LoyalTrident;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.sound.SoundEvents;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,13 +35,23 @@ public abstract class PlayerInventoryMixin {
     @Shadow
     public abstract ItemStack getInvStack(int slot);
 
+    @Shadow
+    @Final
+    public PlayerEntity player;
+
     @ModifyArg(method = "insertStack(Lnet/minecraft/item/ItemStack;)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;insertStack(ILnet/minecraft/item/ItemStack;)Z"))
     private int insertToPreferredSlot(int slot, ItemStack stack) {
         CompoundTag tag = stack.getSubTag(LoyalTrident.MOD_NBT_KEY);
-        if (tag != null && tag.contains(LoyalTrident.RETURN_SLOT_NBT_KEY)) {
-            int preferredSlot = tag.getInt(LoyalTrident.RETURN_SLOT_NBT_KEY);
-            if (this.getInvStack(preferredSlot).isEmpty()) {
-                return preferredSlot;
+        if (tag != null) {
+            if (tag.getBoolean("clank")) {
+                player.world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ITEM_TRIDENT_RETURN, player.getSoundCategory(), 0.7f, 0.5f);
+                tag.remove("clank");
+            }
+            if (tag.contains(LoyalTrident.RETURN_SLOT_NBT_KEY)) {
+                int preferredSlot = tag.getInt(LoyalTrident.RETURN_SLOT_NBT_KEY);
+                if (this.getInvStack(preferredSlot).isEmpty()) {
+                    return preferredSlot;
+                }
             }
         }
         return slot;
