@@ -5,6 +5,7 @@
   "minVersion": "0.7.11-SNAPSHOT",
   "mixins": [
     "ItemEntityMixin",
+    "ItemMixin",
     "PlayerEntityMixin",
     "PlayerInventoryMixin",
     "ProjectileAccessor",
@@ -13,6 +14,7 @@
     "TridentItemMixin"
   ],
   "client": [
+    "client.ItemStackMixin",
     "client.MinecraftClientMixin",
     "client.PlayerEntityRendererMixin"
   ],

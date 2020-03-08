@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface LoyalTrident {
     String MOD_NBT_KEY = SincereLoyalty.MOD_ID;
+    String OWNER_NAME_NBT_KEY = "owner_name";
     String TRIDENT_OWNER_NBT_KEY = "trident_owner";
     String TRIDENT_SIT_NBT_KEY = "trident_sit";
     String RETURN_SLOT_NBT_KEY = "return_slot";

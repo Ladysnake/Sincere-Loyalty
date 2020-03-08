@@ -12,6 +12,7 @@ import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -55,7 +56,9 @@ public abstract class SmithingContainerMixin extends class_4861 {
                     // we can mutate the map as it is recreated with every call to getEnchantments
                     enchantments.put(Enchantments.LOYALTY, Enchantments.LOYALTY.getMaximumLevel() + 1);
                     EnchantmentHelper.set(enchantments, result);
-                    result.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY).method_25927(LoyalTrident.TRIDENT_OWNER_NBT_KEY, this.field_22482.getUuid());
+                    CompoundTag loyaltyData = result.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY);
+                    loyaltyData.method_25927(LoyalTrident.TRIDENT_OWNER_NBT_KEY, this.field_22482.getUuid());
+                    loyaltyData.putString(LoyalTrident.OWNER_NAME_NBT_KEY, this.field_22482.getEntityName());
                     return result;
                 }
             }
