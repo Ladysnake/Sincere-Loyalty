@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "io.github.ladysnake.sincereloyalty.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "minVersion": "0.7.11-SNAPSHOT",
+  "mixins": [
+    "ItemEntityMixin",
+    "PlayerInventoryMixin",
+    "ProjectileAccessor",
+    "SmithingContainerMixin",
+    "TridentEntityMixin",
+    "TridentItemMixin"
+  ],
+  "client": [
+    "client.MinecraftClientMixin",
+    "client.PlayerEntityRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

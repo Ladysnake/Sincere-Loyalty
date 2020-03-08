@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "sincere-loyalty",
+  "version": "${version}",
+  "name": "Sincere Loyalty",
+  "icon": "assets/sincere-loyalty/icon.png",
+  "description": "Making tridents even more loyal",
+  "license": "LGPL-3.0-or-later",
+  "authors": [
+    "Pyrofab"
+  ],
+  "contact": {
+    "sources": "https://github.com/Ladysnake/SincereLoyalty",
+    "issues": "https://github.com/Ladysnake/SincereLoyalty/issues",
+    "discord": "ladysnake.glitch.me/discord"
+  },
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.ladysnake.sincereloyalty.SincereLoyalty"
+    ],
+    "client": [
+      "io.github.ladysnake.sincereloyalty.SincereLoyaltyClient::INSTANCE"
+    ]
+  },
+  "mixins": [
+    {
+      "environment": "*",
+      "config": "mixins.sincereloyalty.common.json"
+    }
+  ],
+  "depends": {
+    "fabric": "*",
+    "cardinal-components-world": "*"
+  }
+}
