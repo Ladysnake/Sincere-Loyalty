@@ -1,28 +1,20 @@
 package io.github.ladysnake.sincereloyalty;
 
-import nerdhub.cardinal.components.api.ComponentRegistry;
-import nerdhub.cardinal.components.api.ComponentType;
-import nerdhub.cardinal.components.api.event.WorldComponentCallback;
+import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
+import net.fabricmc.fabric.api.server.PlayerStream;
 import net.fabricmc.fabric.api.tag.TagRegistry;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.PacketByteBuf;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.stream.Stream;
 
 public final class SincereLoyalty implements ModInitializer {
-    public static final ComponentType<LoyalTridentStorage> LOYAL_TRIDENTS =
-        ComponentRegistry.INSTANCE.registerIfAbsent(id("loyal_tridents"), LoyalTridentStorage.class)
-            .attach(WorldComponentCallback.EVENT, LoyalTridentStorage::new);
 
     public static final String MOD_ID = "sincere-loyalty";
 
@@ -30,6 +22,7 @@ public final class SincereLoyalty implements ModInitializer {
     public static final Tag<Item> TRIDENTS = TagRegistry.item(id("tridents"));
 
     public static final Identifier RECALL_TRIDENTS_MESSAGE_ID = id("recall_tridents");
+    public static final Identifier RECALLING_MESSAGE_ID = id("recalling_tridents");
 
     public static Identifier id(String path) {
         return new Identifier("sincere-loyalty", path);
@@ -37,13 +30,25 @@ public final class SincereLoyalty implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ServerSidePacketRegistry.INSTANCE.register(RECALL_TRIDENTS_MESSAGE_ID, (ctx, b) -> ctx.getTaskQueue().execute(() -> {
-            PlayerEntity player = ctx.getPlayer();
-            LoyalTridentStorage loyalTridentStorage = LOYAL_TRIDENTS.get(player.world);
+        ServerSidePacketRegistry.INSTANCE.register(RECALL_TRIDENTS_MESSAGE_ID, (ctx, buf) -> {
+            TridentRecaller.RecallStatus charging = buf.readEnumConstant(TridentRecaller.RecallStatus.class);
 
-            if (loyalTridentStorage.hasTridents(player)) {
-                loyalTridentStorage.recallTridents(player);
-            }
-        }));
+            ctx.getTaskQueue().execute(() -> {
+                PlayerEntity player = ctx.getPlayer();
+                LoyalTridentStorage loyalTridentStorage = LoyalTridentStorage.get((ServerWorld) player.world);
+                TridentRecaller.RecallStatus actualRecallStatus = loyalTridentStorage.hasTridents(player) ? charging : TridentRecaller.RecallStatus.CANCEL;
+
+                if (((TridentRecaller) player).sincereloyalty_updateRecallStatus(actualRecallStatus)) {
+                    if (actualRecallStatus == TridentRecaller.RecallStatus.RECALL) {
+                        loyalTridentStorage.recallTridents(player);
+                    }
+                    PacketByteBuf res = new PacketByteBuf(Unpooled.buffer());
+                    res.writeInt(player.getEntityId());
+                    res.writeEnumConstant(actualRecallStatus);
+                    Stream.concat(Stream.of(player), PlayerStream.watching(player))
+                        .forEach(p -> ServerSidePacketRegistry.INSTANCE.sendToPlayer(p, RECALLING_MESSAGE_ID, res));
+                }
+            });
+        });
     }
 }

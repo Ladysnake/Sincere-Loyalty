@@ -1,13 +1,14 @@
 package io.github.ladysnake.sincereloyalty.mixin;
 
 import io.github.ladysnake.sincereloyalty.LoyalTrident;
-import io.github.ladysnake.sincereloyalty.SincereLoyalty;
+import io.github.ladysnake.sincereloyalty.LoyalTridentStorage;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.TridentEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -21,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(TridentEntity.class)
@@ -28,9 +30,7 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
     @Shadow
     private ItemStack tridentStack;
 
-    @Nullable
-    @Unique
-    private Boolean veryLoyalTrident;
+    private @Nullable Optional<UUID> sincereLoyalty_trueOwner;
 
     protected TridentEntityMixin(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
@@ -71,8 +71,8 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
         at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/data/DataTracker;get(Lnet/minecraft/entity/data/TrackedData;)Ljava/lang/Object;")
     )
     private Object sit(DataTracker self, TrackedData<Byte> trackedData) {
-        if (this.isVeryLoyalTrident()) {
-            // If your owner told you to sit, you sit
+        if (this.getTrueTridentOwner().isPresent()) {
+            // If your owner told you to sit, you sit (fake no loyalty)
             if (LoyalTrident.hasSittingFlag(this.tridentStack)) {
                 return (byte) 0;
             }
@@ -82,23 +82,26 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
 
     @Inject(method = "tick", at = @At("RETURN"))
     private void tickTrident(CallbackInfo ci) {
-        if (this.isVeryLoyalTrident()) {
-            // Keep track of this trident's position at all time, in case the chunk goes unloaded
-            SincereLoyalty.LOYAL_TRIDENTS.get(this.world).memorizeTrident(((ProjectileAccessor) this).getOwnerUuid(), ((TridentEntity) (Object) this));
+        if (!this.world.isClient) {
+            this.getTrueTridentOwner().ifPresent(trueOwnerUuid -> {
+                // Keep track of this trident's position at all time, in case the chunk goes unloaded
+                LoyalTridentStorage.get((ServerWorld) this.world)
+                    .memorizeTrident(trueOwnerUuid, ((TridentEntity) (Object) this));
+            });
         }
     }
 
     @Unique
-    private boolean isVeryLoyalTrident() {
-        if (this.veryLoyalTrident == null) {
-            UUID trueOwner = LoyalTrident.getTrueOwner(this.tridentStack);
-            this.veryLoyalTrident = trueOwner != null;
+    private Optional<UUID> getTrueTridentOwner() {
+        //noinspection OptionalAssignedToNull
+        if (this.sincereLoyalty_trueOwner == null) {
+            this.sincereLoyalty_trueOwner = Optional.ofNullable(LoyalTrident.getTrueOwner(this.tridentStack));
             // Not the owner == no loyalty
-            if (this.veryLoyalTrident && !Objects.equals(trueOwner, ((ProjectileAccessor) this).getOwnerUuid())) {
+            if (!Objects.equals(sincereLoyalty_trueOwner.orElse(null), ((ProjectileAccessor) this).getOwnerUuid())) {
                 this.loyaltrident_sit();
             }
         }
-        return this.veryLoyalTrident;
+        return this.sincereLoyalty_trueOwner;
     }
 
     /**
@@ -109,5 +112,14 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
     @Inject(method = "asItemStack", at = @At("RETURN"), cancellable = true)
     private void reenableLoyalty(CallbackInfoReturnable<ItemStack> cir) {
         LoyalTrident.clearSittingFlag(cir.getReturnValue());
+    }
+
+    @Override
+    public void remove() {
+        super.remove();
+        if (!world.isClient) {
+            this.getTrueTridentOwner().ifPresent(uuid ->
+                LoyalTridentStorage.get(((ServerWorld) this.world)).forgetTrident(uuid, ((TridentEntity) (Object) this)));
+        }
     }
 }

@@ -30,7 +30,6 @@
     }
   ],
   "depends": {
-    "fabric": "*",
-    "cardinal-components-world": "*"
+    "fabric": "*"
   }
 }
