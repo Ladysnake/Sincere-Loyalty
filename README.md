@@ -1,13 +1,16 @@
 # Sincere Loyalty
 
-[![Curseforge](https://curse.nikky.moe/api/img/359522?logo)](https://www.curseforge.com/projects/359522) [![](https://jitpack.io/v/Ladysnake/SincereLoyalty.svg)](https://jitpack.io/#Ladysnake/SincereLoyalty)
+[![Curseforge](https://curse.nikky.moe/api/img/366420?logo)](https://www.curseforge.com/projects/366420) [![](https://jitpack.io/v/Ladysnake/Sincere-Loyalty.svg)](https://jitpack.io/#Ladysnake/Sincere-Loyalty)
 
 Make your trident even more loyal !
 
-A trident with Loyalty III can be combined with Heart of the Sea to obtain Loyalty IV. 
+A trident with Loyalty III can be combined with Heart of the Sea to obtain Loyalty IV.
+
+![Craft](https://cdn.discordapp.com/attachments/523251999899385875/686333307947974707/unknown.png)
+
 At this level, whenever it is dropped it will drop as an entity. Tridents abandoned in this way can be brought back to you
-by keeping right click down with an empty hand, no matter the distance. No one will be able to steal them from you either,
-as when thrown Loyalty II tridents will always get back to you. Tridents with Loyalty IV cannot be destroyed by normal means.
+by keeping right click down with an empty hand, no matter the distance. No one will be able to steal them from you for long either,
+as Loyalty IV tridents can always be recalled by you when thrown or dropped. Tridents with Loyalty IV cannot be destroyed by normal means.
 
 ## Installing
 ### Players
