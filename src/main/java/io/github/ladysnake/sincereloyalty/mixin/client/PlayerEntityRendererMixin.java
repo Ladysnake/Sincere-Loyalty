@@ -30,7 +30,7 @@ public abstract class PlayerEntityRendererMixin {
 
     @ModifyVariable(method = "getArmPose", at = @At(value = "RETURN", shift = At.Shift.BEFORE))
     private BipedEntityModel.ArmPose getArmPose(BipedEntityModel.ArmPose initialPose, AbstractClientPlayerEntity player) {
-        if (initialPose == BipedEntityModel.ArmPose.EMPTY && ((TridentRecaller) player).isRecallingTrident()) {
+        if (initialPose == BipedEntityModel.ArmPose.EMPTY && ((TridentRecaller) player).getCurrentRecallStatus() != TridentRecaller.RecallStatus.NONE) {
             return BipedEntityModel.ArmPose.CROSSBOW_HOLD;
         }
         return initialPose;

@@ -23,13 +23,13 @@ public interface TridentRecaller {
     /**
      * Returns {@code true} if the status was changed through this call
      */
-    @Contract(mutates = "this")
-    boolean sincereloyalty_updateRecallStatus(RecallStatus recalling);
+    // no need for a prefix, the signature has a custom type
+    void updateRecallStatus(RecallStatus recalling);
 
     @Contract(pure = true)
-    boolean isRecallingTrident();
+    RecallStatus getCurrentRecallStatus();
 
     enum RecallStatus {
-        CHARGING, CANCEL, RECALL
+        CHARGING, NONE, RECALLING
     }
 }

@@ -17,19 +17,14 @@
  */
 package io.github.ladysnake.sincereloyalty;
 
-import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
-import net.fabricmc.fabric.api.server.PlayerStream;
 import net.fabricmc.fabric.api.tag.TagRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.PacketByteBuf;
-
-import java.util.stream.Stream;
 
 public final class SincereLoyalty implements ModInitializer {
 
@@ -48,23 +43,30 @@ public final class SincereLoyalty implements ModInitializer {
     @Override
     public void onInitialize() {
         ServerSidePacketRegistry.INSTANCE.register(RECALL_TRIDENTS_MESSAGE_ID, (ctx, buf) -> {
-            TridentRecaller.RecallStatus charging = buf.readEnumConstant(TridentRecaller.RecallStatus.class);
+            TridentRecaller.RecallStatus requested = buf.readEnumConstant(TridentRecaller.RecallStatus.class);
 
             ctx.getTaskQueue().execute(() -> {
                 PlayerEntity player = ctx.getPlayer();
                 LoyalTridentStorage loyalTridentStorage = LoyalTridentStorage.get((ServerWorld) player.world);
-                TridentRecaller.RecallStatus actualRecallStatus = loyalTridentStorage.hasTridents(player) ? charging : TridentRecaller.RecallStatus.CANCEL;
+                TridentRecaller.RecallStatus currentRecallStatus = ((TridentRecaller) player).getCurrentRecallStatus();
+                TridentRecaller.RecallStatus newRecallStatus;
 
-                if (((TridentRecaller) player).sincereloyalty_updateRecallStatus(actualRecallStatus)) {
-                    if (actualRecallStatus == TridentRecaller.RecallStatus.RECALL) {
-                        loyalTridentStorage.recallTridents(player);
+                if (loyalTridentStorage.hasTridents(player)) {
+                    if (currentRecallStatus != requested && requested == TridentRecaller.RecallStatus.RECALLING) {
+                        // if there is no trident to recall, reset the player's animation
+                        if (loyalTridentStorage.recallTridents(player)) {
+                            newRecallStatus = TridentRecaller.RecallStatus.RECALLING;
+                        } else {
+                            newRecallStatus = TridentRecaller.RecallStatus.NONE;
+                        }
+                    } else {
+                        newRecallStatus = requested;
                     }
-                    PacketByteBuf res = new PacketByteBuf(Unpooled.buffer());
-                    res.writeInt(player.getEntityId());
-                    res.writeEnumConstant(actualRecallStatus);
-                    Stream.concat(Stream.of(player), PlayerStream.watching(player))
-                        .forEach(p -> ServerSidePacketRegistry.INSTANCE.sendToPlayer(p, RECALLING_MESSAGE_ID, res));
+                } else {
+                    newRecallStatus = TridentRecaller.RecallStatus.NONE;
                 }
+
+                ((TridentRecaller) player).updateRecallStatus(newRecallStatus);
             });
         });
     }

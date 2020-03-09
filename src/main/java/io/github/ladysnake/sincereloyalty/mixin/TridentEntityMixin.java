@@ -59,10 +59,7 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
     }
 
     @Override
-    public void loyaltrident_wakeUp(boolean prepareImpact) {
-        if (prepareImpact) {
-            this.tridentStack.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY).putBoolean("clank", true);
-        }
+    public void loyaltrident_wakeUp() {
         LoyalTrident.clearSittingFlag(this.tridentStack);
     }
 

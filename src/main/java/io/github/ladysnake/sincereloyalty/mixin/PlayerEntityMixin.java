@@ -17,27 +17,46 @@
  */
 package io.github.ladysnake.sincereloyalty.mixin;
 
+import io.github.ladysnake.sincereloyalty.SincereLoyalty;
 import io.github.ladysnake.sincereloyalty.TridentRecaller;
+import io.netty.buffer.Unpooled;
+import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
+import net.fabricmc.fabric.api.server.PlayerStream;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.PacketByteBuf;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
+import java.util.stream.Stream;
+
 @Mixin(PlayerEntity.class)
-public abstract class PlayerEntityMixin implements TridentRecaller {
+public abstract class PlayerEntityMixin extends LivingEntity implements TridentRecaller {
     @Unique
     private RecallStatus recallingTrident;
 
-    @Override
-    public boolean isRecallingTrident() {
-        return recallingTrident == TridentRecaller.RecallStatus.CHARGING;
+    protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
+        super(entityType, world);
     }
 
     @Override
-    public boolean sincereloyalty_updateRecallStatus(RecallStatus recallingTrident) {
+    public RecallStatus getCurrentRecallStatus() {
+        return this.recallingTrident;
+    }
+
+    @Override
+    public void updateRecallStatus(RecallStatus recallingTrident) {
         if (this.recallingTrident != recallingTrident) {
             this.recallingTrident = recallingTrident;
-            return true;
+            if (!this.world.isClient) {
+                PacketByteBuf res = new PacketByteBuf(Unpooled.buffer());
+                res.writeInt(this.getEntityId());
+                res.writeEnumConstant(recallingTrident);
+                Stream.concat(Stream.of(this), PlayerStream.watching(this))
+                    .forEach(p -> ServerSidePacketRegistry.INSTANCE.sendToPlayer((PlayerEntity) p, SincereLoyalty.RECALLING_MESSAGE_ID, res));
+            }
         }
-        return false;
     }
 }

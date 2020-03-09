@@ -55,7 +55,7 @@ public final class SincereLoyaltyClient implements ClientModInitializer {
             ctx.getTaskQueue().execute(() -> {
                 Entity player = ctx.getPlayer().world.getEntityById(playerId);
                 if (player instanceof TridentRecaller) {
-                    ((TridentRecaller) player).sincereloyalty_updateRecallStatus(recalling);
+                    ((TridentRecaller) player).updateRecallStatus(recalling);
                 }
             });
         });
@@ -73,13 +73,13 @@ public final class SincereLoyaltyClient implements ClientModInitializer {
                     return TridentRecaller.RecallStatus.CHARGING;
                 } else if (this.useTime == RECALL_TIME) {
                     this.useTime = 0;
-                    return TridentRecaller.RecallStatus.RECALL;
+                    return TridentRecaller.RecallStatus.RECALLING;
                 }
             }
             this.failedUseCountdown--;
         } else if (this.useTime > 0) {
             this.useTime = 0;
-            return TridentRecaller.RecallStatus.CANCEL;
+            return TridentRecaller.RecallStatus.NONE;
         }
         return null;
     }

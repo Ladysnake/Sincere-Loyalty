@@ -64,10 +64,14 @@ public final class LoyalTridentStorage extends PersistentState {
         this.tridents.getOrDefault(owner, OwnedTridents.EMPTY).clearTridentPosition(trident.getUuid());
     }
 
-    public void recallTridents(PlayerEntity player) {
+    /**
+     * @return {@code true} if at least one trident was recalled
+     */
+    public boolean recallTridents(PlayerEntity player) {
+        boolean foundAny = false;
         for (TridentEntity trident : this.tridents.getOrDefault(player.getUuid(), OwnedTridents.EMPTY)) {
             float initialDistance = trident.distanceTo(player);
-            ((LoyalTrident) trident).loyaltrident_wakeUp(initialDistance > 20);
+            ((LoyalTrident) trident).loyaltrident_wakeUp();
 
             if (initialDistance > 64) {
                 // reposition the trident at the same angle to the player but only 64 blocks away
@@ -78,7 +82,9 @@ public final class LoyalTridentStorage extends PersistentState {
             ((LoyalTrident) trident).loyaltrident_setReturnSlot(player.inventory.selectedSlot);
             this.world.playSound(player, trident.getX(), trident.getY(), trident.getZ(), SoundEvents.ITEM_TRIDENT_RETURN, trident.getSoundCategory(), 2.0f, 0.7f);
             ServerSidePacketRegistry.INSTANCE.sendToPlayer(player, new PlaySoundIdS2CPacket(SoundEvents.ITEM_TRIDENT_RETURN.getId(), trident.getSoundCategory(), trident.getPos(), trident.distanceTo(player) / 8, 0.7f));
+            foundAny = true;
         }
+        return foundAny;
     }
 
     @Override

@@ -72,7 +72,7 @@ public interface LoyalTrident {
 
     void loyaltrident_sit();
 
-    void loyaltrident_wakeUp(boolean prepareImpact);
+    void loyaltrident_wakeUp();
 
     void loyaltrident_setReturnSlot(int slot);
 }
