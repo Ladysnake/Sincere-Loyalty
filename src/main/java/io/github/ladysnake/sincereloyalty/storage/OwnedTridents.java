@@ -15,25 +15,22 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; If not, see <https://www.gnu.org/licenses>.
  */
-package io.github.ladysnake.sincereloyalty;
+package io.github.ladysnake.sincereloyalty.storage;
 
 import net.fabricmc.fabric.api.util.NbtType;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.TridentEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public final class OwnedTridents implements Iterable<TridentEntity> {
+public final class OwnedTridents implements Iterable<TridentEntry> {
     static final OwnedTridents EMPTY = new OwnedTridents();
 
     private final LoyalTridentStorage parentStorage;
-    private final Map<UUID, BlockPos> ownedTridents;
+    private final Map<UUID, TridentEntry> ownedTridents;
 
     private OwnedTridents() {
         this.parentStorage = null;
@@ -45,8 +42,20 @@ public final class OwnedTridents implements Iterable<TridentEntity> {
         ownedTridents = new HashMap<>();
     }
 
-    public void storeTridentPosition(UUID tridentUuid, BlockPos pos) {
-        this.ownedTridents.put(tridentUuid, pos);
+    public void storeTridentPosition(UUID tridentUuid, UUID tridentEntityUuid, BlockPos lastPos) {
+        TridentEntry entry = this.ownedTridents.get(tridentUuid);
+        if (entry instanceof WorldTridentEntry) {
+            ((WorldTridentEntry) entry).updateLastPos(tridentEntityUuid, lastPos);
+        } else {
+            this.ownedTridents.put(tridentUuid, new WorldTridentEntry(this.parentStorage.world, tridentUuid, lastPos));
+        }
+    }
+
+    public void storeTridentHolder(UUID tridentUuid, PlayerEntity holder) {
+        TridentEntry entry = this.ownedTridents.get(tridentUuid);
+        if (!(entry instanceof InventoryTridentEntry) || !((InventoryTridentEntry) entry).isHolder(holder)) {
+            this.ownedTridents.put(tridentUuid, new InventoryTridentEntry(this.parentStorage.world, holder.getUuid()));
+        }
     }
 
     public void clearTridentPosition(UUID tridentUuid) {
@@ -55,43 +64,8 @@ public final class OwnedTridents implements Iterable<TridentEntity> {
 
     @NotNull
     @Override
-    public Iterator<TridentEntity> iterator() {
-        return new Iterator<TridentEntity>() {
-            private final Iterator<Map.Entry<UUID, BlockPos>> iterator = ownedTridents.entrySet().iterator();
-            private @Nullable TridentEntity next = null;
-
-            private TridentEntity findNext() {
-                while (this.next == null && iterator.hasNext()) {
-                    Map.Entry<UUID, BlockPos> entry = iterator.next();
-                    UUID uuid = entry.getKey();
-                    BlockPos pos = entry.getValue();
-                    // preload the chunk
-                    parentStorage.world.getChunk(pos);
-                    Entity trident = parentStorage.world.getEntity(uuid);
-                    if (trident instanceof TridentEntity) {
-                        this.next = (TridentEntity) trident;
-                    } else {
-                        iterator.remove();
-                    }
-                }
-                return this.next;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return findNext() != null;
-            }
-
-            @Override
-            public TridentEntity next() {
-                TridentEntity next = this.findNext();
-                if (next == null) {
-                    throw new NoSuchElementException();
-                }
-                this.next = null;
-                return next;
-            }
-        };
+    public Iterator<TridentEntry> iterator() {
+        return this.ownedTridents.values().iterator();
     }
 
     public boolean isEmpty() {
@@ -103,14 +77,14 @@ public final class OwnedTridents implements Iterable<TridentEntity> {
         for (int j = 0; j < tridentsNbt.size(); j++) {
             CompoundTag tridentNbt = tridentsNbt.getCompound(j);
             UUID tridentUuid = tridentNbt.method_25926("trident_uuid");
-            storeTridentPosition(tridentUuid, NbtHelper.toBlockPos(tridentNbt));
+            this.ownedTridents.put(tridentUuid, TridentEntry.fromNbt(this.parentStorage.world, tridentNbt));
         }
     }
 
     public void toTag(CompoundTag ownerNbt) {
         ListTag tridentsNbt = new ListTag();
         this.ownedTridents.forEach((uuid, pos) -> {
-            CompoundTag tridentNbt = NbtHelper.fromBlockPos(pos);
+            CompoundTag tridentNbt = pos.toNbt(new CompoundTag());
             tridentNbt.method_25927("trident_uuid", uuid);
             tridentsNbt.add(tridentNbt);
         });

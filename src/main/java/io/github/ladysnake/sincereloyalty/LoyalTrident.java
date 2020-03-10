@@ -18,6 +18,8 @@
 package io.github.ladysnake.sincereloyalty;
 
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.TridentEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -28,6 +30,7 @@ import java.util.UUID;
 
 public interface LoyalTrident {
     String MOD_NBT_KEY = SincereLoyalty.MOD_ID;
+    String TRIDENT_UUID_NBT_KEY = "trident_uuid";
     String OWNER_NAME_NBT_KEY = "owner_name";
     String TRIDENT_OWNER_NBT_KEY = "trident_owner";
     String TRIDENT_SIT_NBT_KEY = "trident_sit";
@@ -35,6 +38,14 @@ public interface LoyalTrident {
 
     static LoyalTrident of(TridentEntity trident) {
         return ((LoyalTrident) trident);
+    }
+
+    static UUID getTridentUuid(ItemStack stack) {
+        CompoundTag loyaltyData = stack.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY);
+        if (!loyaltyData.method_25928(TRIDENT_UUID_NBT_KEY)) {
+            loyaltyData.method_25927(LoyalTrident.TRIDENT_UUID_NBT_KEY, UUID.randomUUID());
+        }
+        return loyaltyData.method_25926(TRIDENT_UUID_NBT_KEY);
     }
 
     static void setPreferredSlot(ItemStack tridentStack, int slot) {
@@ -69,6 +80,28 @@ public interface LoyalTrident {
     static UUID getTrueOwner(ItemStack tridentStack) {
         return hasTrueOwner(tridentStack) ? Objects.requireNonNull(tridentStack.getSubTag(MOD_NBT_KEY)).method_25926(TRIDENT_OWNER_NBT_KEY) : null;
     }
+
+    @Nullable
+    static TridentEntity spawnTridentForStack(Entity thrower, ItemStack tridentStack) {
+        CompoundTag loyaltyData = tridentStack.getSubTag(MOD_NBT_KEY);
+        if (loyaltyData != null) {
+            UUID ownerUuid = loyaltyData.method_25926(TRIDENT_OWNER_NBT_KEY);
+            if (ownerUuid != null) {
+                PlayerEntity owner = thrower.world.getPlayerByUuid(ownerUuid);
+                if (owner != null) {
+                    TridentEntity trident = new TridentEntity(thrower.world, owner, tridentStack);
+                    trident.setVelocity(thrower.getVelocity());
+                    trident.copyPositionAndRotation(thrower);
+                    thrower.world.spawnEntity(trident);
+                    LoyalTrident.of(trident).loyaltrident_sit();
+                    return trident;
+                }
+            }
+        }
+        return null;
+    }
+
+    UUID loyaltrident_getTridentUuid();
 
     void loyaltrident_sit();
 
