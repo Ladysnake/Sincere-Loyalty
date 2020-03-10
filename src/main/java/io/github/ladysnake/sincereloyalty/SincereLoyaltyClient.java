@@ -1,5 +1,5 @@
 /*
- * Sincere Loyalty
+ * Sincere-Loyalty
  * Copyright (C) 2020 Ladysnake
  *
  * This program is free software; you can redistribute it and/or
