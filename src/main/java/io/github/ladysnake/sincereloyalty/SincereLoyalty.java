@@ -17,6 +17,7 @@
  */
 package io.github.ladysnake.sincereloyalty;
 
+import io.github.ladysnake.sincereloyalty.storage.LoyalTridentStorage;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
 import net.fabricmc.fabric.api.tag.TagRegistry;

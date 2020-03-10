@@ -15,8 +15,10 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; If not, see <https://www.gnu.org/licenses>.
  */
-package io.github.ladysnake.sincereloyalty;
+package io.github.ladysnake.sincereloyalty.storage;
 
+import io.github.ladysnake.sincereloyalty.LoyalTrident;
+import io.github.ladysnake.sincereloyalty.SincereLoyalty;
 import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
 import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -26,12 +28,14 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.PersistentState;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -55,13 +59,23 @@ public final class LoyalTridentStorage extends PersistentState {
         return !this.tridents.getOrDefault(player.getUuid(), OwnedTridents.EMPTY).isEmpty();
     }
 
+    /**
+     * Memorizes a loyal trident that is currently existing in the world
+     */
     public void memorizeTrident(UUID owner, TridentEntity trident) {
         BlockPos tridentPos = trident.getSenseCenterPos();
-        this.tridents.computeIfAbsent(owner, o -> new OwnedTridents(this)).storeTridentPosition(trident.getUuid(), tridentPos);
+        this.tridents.computeIfAbsent(owner, o -> new OwnedTridents(this)).storeTridentPosition(LoyalTrident.of(trident).loyaltrident_getTridentUuid(), trident.getUuid(), tridentPos);
+    }
+
+    /**
+     * Memorizes a loyal trident that is being held in another player's inventory
+     */
+    public void memorizeTrident(UUID owner, UUID tridentUuid, PlayerEntity holder) {
+        this.tridents.computeIfAbsent(owner, o -> new OwnedTridents(this)).storeTridentHolder(tridentUuid, holder);
     }
 
     public void forgetTrident(UUID owner, TridentEntity trident) {
-        this.tridents.getOrDefault(owner, OwnedTridents.EMPTY).clearTridentPosition(trident.getUuid());
+        this.tridents.getOrDefault(owner, OwnedTridents.EMPTY).clearTridentPosition(LoyalTrident.of(trident).loyaltrident_getTridentUuid());
     }
 
     /**
@@ -69,7 +83,14 @@ public final class LoyalTridentStorage extends PersistentState {
      */
     public boolean recallTridents(PlayerEntity player) {
         boolean foundAny = false;
-        for (TridentEntity trident : this.tridents.getOrDefault(player.getUuid(), OwnedTridents.EMPTY)) {
+        for (Iterator<TridentEntry> it = this.tridents.getOrDefault(player.getUuid(), OwnedTridents.EMPTY).iterator(); it.hasNext(); ) {
+            TridentEntity trident = it.next().findTrident();
+
+            if (trident == null) {
+                it.remove();
+                continue;
+            }
+
             float initialDistance = trident.distanceTo(player);
             ((LoyalTrident) trident).loyaltrident_wakeUp();
 
@@ -81,7 +102,7 @@ public final class LoyalTridentStorage extends PersistentState {
 
             ((LoyalTrident) trident).loyaltrident_setReturnSlot(player.inventory.selectedSlot);
             this.world.playSound(player, trident.getX(), trident.getY(), trident.getZ(), SoundEvents.ITEM_TRIDENT_RETURN, trident.getSoundCategory(), 2.0f, 0.7f);
-            ServerSidePacketRegistry.INSTANCE.sendToPlayer(player, new PlaySoundIdS2CPacket(SoundEvents.ITEM_TRIDENT_RETURN.getId(), trident.getSoundCategory(), trident.getPos(), trident.distanceTo(player) / 8, 0.7f));
+            ServerSidePacketRegistry.INSTANCE.sendToPlayer(player, new PlaySoundIdS2CPacket(new Identifier("item.trident.return"), trident.getSoundCategory(), trident.getPos(), trident.distanceTo(player) / 8, 0.7f));
             foundAny = true;
         }
         return foundAny;

@@ -18,7 +18,7 @@
 package io.github.ladysnake.sincereloyalty.mixin;
 
 import io.github.ladysnake.sincereloyalty.LoyalTrident;
-import io.github.ladysnake.sincereloyalty.LoyalTridentStorage;
+import io.github.ladysnake.sincereloyalty.storage.LoyalTridentStorage;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -51,6 +51,11 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
 
     protected TridentEntityMixin(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
+    }
+
+    @Override
+    public UUID loyaltrident_getTridentUuid() {
+        return LoyalTrident.getTridentUuid(this.tridentStack);
     }
 
     @Override

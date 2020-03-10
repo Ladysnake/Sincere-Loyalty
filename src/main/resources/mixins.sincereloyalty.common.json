@@ -9,6 +9,7 @@
     "PlayerEntityMixin",
     "PlayerInventoryMixin",
     "ProjectileAccessor",
+    "ServerPlayNetworkHandlerMixin",
     "SmithingContainerMixin",
     "TridentEntityMixin",
     "TridentItemMixin"
