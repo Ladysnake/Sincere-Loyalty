@@ -115,7 +115,7 @@ public final class LoyalTridentStorage extends PersistentState {
         for (int i = 0; i < ownersNbt.size(); i++) {
             OwnedTridents tridents = new OwnedTridents(this);
             CompoundTag ownerNbt = ownersNbt.getCompound(i);
-            UUID ownerUuid = ownerNbt.method_25926("owner_uuid");
+            UUID ownerUuid = ownerNbt.getUuidNew("owner_uuid");
             tridents.fromTag(ownerNbt);
             this.tridents.put(ownerUuid, tridents);
         }
@@ -129,7 +129,7 @@ public final class LoyalTridentStorage extends PersistentState {
             this.tridents.forEach((ownerUuid, tridents) -> {
                 if (!tridents.isEmpty()) {
                     CompoundTag ownerNbt = new CompoundTag();
-                    ownerNbt.method_25927("owner_uuid", ownerUuid);
+                    ownerNbt.putUuidNew("owner_uuid", ownerUuid);
                     tridents.toTag(ownerNbt);
                     ownersNbt.add(ownerNbt);
                 }

@@ -31,7 +31,7 @@ public abstract class TridentEntry {
     }
 
     TridentEntry(ServerWorld world, CompoundTag nbt) {
-        this(world, nbt.method_25926("trident_uuid"));
+        this(world, nbt.getUuidNew("trident_uuid"));
     }
 
     public UUID getTridentUuid() {
@@ -42,7 +42,7 @@ public abstract class TridentEntry {
     public abstract TridentEntity findTrident();
 
     public CompoundTag toNbt(CompoundTag nbt) {
-        nbt.method_25927("trident_uuid", this.tridentUuid);
+        nbt.putUuidNew("trident_uuid", this.tridentUuid);
         return nbt;
     }
 }

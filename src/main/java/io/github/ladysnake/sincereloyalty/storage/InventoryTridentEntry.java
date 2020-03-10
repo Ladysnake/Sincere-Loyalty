@@ -19,13 +19,13 @@ public class InventoryTridentEntry extends TridentEntry {
 
     InventoryTridentEntry(ServerWorld world, CompoundTag tag) {
         super(world, tag);
-        this.playerUuid = tag.method_25926("player_uuid");
+        this.playerUuid = tag.getUuidNew("player_uuid");
     }
 
     @Override
     public CompoundTag toNbt(CompoundTag nbt) {
         super.toNbt(nbt);
-        nbt.method_25927("player_uuid", this.playerUuid);
+        nbt.putUuidNew("player_uuid", this.playerUuid);
         return nbt;
     }
 
@@ -36,8 +36,8 @@ public class InventoryTridentEntry extends TridentEntry {
             for (int slot = 0; slot < player.inventory.getInvSize(); slot++) {
                 ItemStack stack = player.inventory.getInvStack(slot);
                 CompoundTag loyaltyData = stack.getSubTag(LoyalTrident.MOD_NBT_KEY);
-                if (loyaltyData != null && loyaltyData.method_25928(LoyalTrident.TRIDENT_UUID_NBT_KEY)) {
-                    if (loyaltyData.method_25926(LoyalTrident.TRIDENT_UUID_NBT_KEY).equals(this.tridentUuid)) {
+                if (loyaltyData != null && loyaltyData.containsUuidNew(LoyalTrident.TRIDENT_UUID_NBT_KEY)) {
+                    if (loyaltyData.getUuidNew(LoyalTrident.TRIDENT_UUID_NBT_KEY).equals(this.tridentUuid)) {
                         TridentEntity tridentEntity = LoyalTrident.spawnTridentForStack(player, stack);
                         if (tridentEntity != null) {
                             player.inventory.removeInvStack(slot);

@@ -19,10 +19,6 @@ package io.github.ladysnake.sincereloyalty.mixin;
 
 import io.github.ladysnake.sincereloyalty.LoyalTrident;
 import io.github.ladysnake.sincereloyalty.SincereLoyalty;
-import net.minecraft.class_4861;
-import net.minecraft.class_4862;
-import net.minecraft.container.BlockContext;
-import net.minecraft.container.ContainerType;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
@@ -30,6 +26,10 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.screen.BlockContext;
+import net.minecraft.screen.ForgingScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.SmithingScreenHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -39,23 +39,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
 
-@Mixin(class_4862.class)
-public abstract class SmithingContainerMixin extends class_4861 {
-    public SmithingContainerMixin(ContainerType<?> containerType, int i, PlayerInventory playerInventory, BlockContext blockContext) {
+@Mixin(SmithingScreenHandler.class)
+public abstract class SmithingScreenHandlerMixin extends ForgingScreenHandler {
+    public SmithingScreenHandlerMixin(ScreenHandlerType<?> containerType, int i, PlayerInventory playerInventory, BlockContext blockContext) {
         super(containerType, i, playerInventory, blockContext);
     }
 
-    @Inject(method = "method_24927", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "canTakeOutput", at = @At("RETURN"), cancellable = true)
     private void canTakeResult(PlayerEntity playerEntity, boolean resultNonEmpty, CallbackInfoReturnable<Boolean> cir) {
         if (resultNonEmpty && !cir.getReturnValueZ()) {
-            ItemStack item = this.field_22480.getInvStack(0);
-            ItemStack upgradeItem = this.field_22480.getInvStack(1);
+            ItemStack item = this.input.getInvStack(0);
+            ItemStack upgradeItem = this.input.getInvStack(1);
             cir.setReturnValue(SincereLoyalty.TRIDENTS.contains(item.getItem()) && SincereLoyalty.LOYALTY_CATALYSTS.contains(upgradeItem.getItem()));
         }
     }
 
     @ModifyArg(
-        method = "method_24928",
+        method = "updateResult",
         slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/item/ItemStack;EMPTY:Lnet/minecraft/item/ItemStack;")),
         at = @At(
             value = "INVOKE",
@@ -64,8 +64,8 @@ public abstract class SmithingContainerMixin extends class_4861 {
     )
     private ItemStack updateResult(ItemStack initialResult) {
         if (initialResult.isEmpty()) {
-            ItemStack item = this.field_22480.getInvStack(0);
-            ItemStack upgradeItem = this.field_22480.getInvStack(1);
+            ItemStack item = this.input.getInvStack(0);
+            ItemStack upgradeItem = this.input.getInvStack(1);
             if (SincereLoyalty.TRIDENTS.contains(item.getItem()) && SincereLoyalty.LOYALTY_CATALYSTS.contains(upgradeItem.getItem())) {
                 Map<Enchantment, Integer> enchantments = EnchantmentHelper.getEnchantments(item);
                 if (enchantments.getOrDefault(Enchantments.LOYALTY, 0) == Enchantments.LOYALTY.getMaximumLevel()) {
@@ -74,8 +74,8 @@ public abstract class SmithingContainerMixin extends class_4861 {
                     enchantments.put(Enchantments.LOYALTY, Enchantments.LOYALTY.getMaximumLevel() + 1);
                     EnchantmentHelper.set(enchantments, result);
                     CompoundTag loyaltyData = result.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY);
-                    loyaltyData.method_25927(LoyalTrident.TRIDENT_OWNER_NBT_KEY, this.field_22482.getUuid());
-                    loyaltyData.putString(LoyalTrident.OWNER_NAME_NBT_KEY, this.field_22482.getEntityName());
+                    loyaltyData.putUuidNew(LoyalTrident.TRIDENT_OWNER_NBT_KEY, this.player.getUuid());
+                    loyaltyData.putString(LoyalTrident.OWNER_NAME_NBT_KEY, this.player.getEntityName());
                     return result;
                 }
             }

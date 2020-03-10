@@ -42,10 +42,10 @@ public interface LoyalTrident {
 
     static UUID getTridentUuid(ItemStack stack) {
         CompoundTag loyaltyData = stack.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY);
-        if (!loyaltyData.method_25928(TRIDENT_UUID_NBT_KEY)) {
-            loyaltyData.method_25927(LoyalTrident.TRIDENT_UUID_NBT_KEY, UUID.randomUUID());
+        if (!loyaltyData.containsUuidNew(TRIDENT_UUID_NBT_KEY)) {
+            loyaltyData.putUuidNew(LoyalTrident.TRIDENT_UUID_NBT_KEY, UUID.randomUUID());
         }
-        return loyaltyData.method_25926(TRIDENT_UUID_NBT_KEY);
+        return loyaltyData.getUuidNew(TRIDENT_UUID_NBT_KEY);
     }
 
     static void setPreferredSlot(ItemStack tridentStack, int slot) {
@@ -71,21 +71,21 @@ public interface LoyalTrident {
     static boolean hasTrueOwner(ItemStack tridentStack) {
         if (SincereLoyalty.TRIDENTS.contains(tridentStack.getItem()) && EnchantmentHelper.getLoyalty(tridentStack) > 0) {
             CompoundTag loyaltyNbt = tridentStack.getSubTag(MOD_NBT_KEY);
-            return loyaltyNbt != null && loyaltyNbt.method_25928(TRIDENT_OWNER_NBT_KEY);
+            return loyaltyNbt != null && loyaltyNbt.containsUuidNew(TRIDENT_OWNER_NBT_KEY);
         }
         return false;
     }
 
     @Nullable
     static UUID getTrueOwner(ItemStack tridentStack) {
-        return hasTrueOwner(tridentStack) ? Objects.requireNonNull(tridentStack.getSubTag(MOD_NBT_KEY)).method_25926(TRIDENT_OWNER_NBT_KEY) : null;
+        return hasTrueOwner(tridentStack) ? Objects.requireNonNull(tridentStack.getSubTag(MOD_NBT_KEY)).getUuidNew(TRIDENT_OWNER_NBT_KEY) : null;
     }
 
     @Nullable
     static TridentEntity spawnTridentForStack(Entity thrower, ItemStack tridentStack) {
         CompoundTag loyaltyData = tridentStack.getSubTag(MOD_NBT_KEY);
         if (loyaltyData != null) {
-            UUID ownerUuid = loyaltyData.method_25926(TRIDENT_OWNER_NBT_KEY);
+            UUID ownerUuid = loyaltyData.getUuidNew(TRIDENT_OWNER_NBT_KEY);
             if (ownerUuid != null) {
                 PlayerEntity owner = thrower.world.getPlayerByUuid(ownerUuid);
                 if (owner != null) {

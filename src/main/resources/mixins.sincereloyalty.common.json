@@ -10,7 +10,7 @@
     "PlayerInventoryMixin",
     "ProjectileAccessor",
     "ServerPlayNetworkHandlerMixin",
-    "SmithingContainerMixin",
+    "SmithingScreenHandlerMixin",
     "TridentEntityMixin",
     "TridentItemMixin"
   ],
