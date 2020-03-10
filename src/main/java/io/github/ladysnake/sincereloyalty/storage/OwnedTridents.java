@@ -39,7 +39,7 @@ public final class OwnedTridents implements Iterable<TridentEntry> {
 
     OwnedTridents(LoyalTridentStorage parentStorage) {
         this.parentStorage = parentStorage;
-        ownedTridents = new HashMap<>();
+        this.ownedTridents = new HashMap<>();
     }
 
     public void storeTridentPosition(UUID tridentUuid, UUID tridentEntityUuid, BlockPos lastPos) {
@@ -47,15 +47,19 @@ public final class OwnedTridents implements Iterable<TridentEntry> {
         if (entry instanceof WorldTridentEntry) {
             ((WorldTridentEntry) entry).updateLastPos(tridentEntityUuid, lastPos);
         } else {
-            this.ownedTridents.put(tridentUuid, new WorldTridentEntry(this.parentStorage.world, tridentUuid, lastPos));
+            this.ownedTridents.put(tridentUuid, new WorldTridentEntry(this.parentStorage.world, tridentUuid, tridentUuid, lastPos));
         }
     }
 
     public void storeTridentHolder(UUID tridentUuid, PlayerEntity holder) {
         TridentEntry entry = this.ownedTridents.get(tridentUuid);
         if (!(entry instanceof InventoryTridentEntry) || !((InventoryTridentEntry) entry).isHolder(holder)) {
-            this.ownedTridents.put(tridentUuid, new InventoryTridentEntry(this.parentStorage.world, holder.getUuid()));
+            this.addEntry(new InventoryTridentEntry(this.parentStorage.world, tridentUuid, holder.getUuid()));
         }
+    }
+
+    private void addEntry(@NotNull TridentEntry entry) {
+        this.ownedTridents.put(entry.getTridentUuid(), entry);
     }
 
     public void clearTridentPosition(UUID tridentUuid) {
@@ -75,19 +79,18 @@ public final class OwnedTridents implements Iterable<TridentEntry> {
     public void fromTag(CompoundTag ownerNbt) {
         ListTag tridentsNbt = ownerNbt.getList("tridents", NbtType.COMPOUND);
         for (int j = 0; j < tridentsNbt.size(); j++) {
-            CompoundTag tridentNbt = tridentsNbt.getCompound(j);
-            UUID tridentUuid = tridentNbt.method_25926("trident_uuid");
-            this.ownedTridents.put(tridentUuid, TridentEntry.fromNbt(this.parentStorage.world, tridentNbt));
+            TridentEntry trident = TridentEntry.fromNbt(this.parentStorage.world, tridentsNbt.getCompound(j));
+            if (trident != null) {
+                this.addEntry(trident);
+            }
         }
     }
 
     public void toTag(CompoundTag ownerNbt) {
         ListTag tridentsNbt = new ListTag();
-        this.ownedTridents.forEach((uuid, pos) -> {
-            CompoundTag tridentNbt = pos.toNbt(new CompoundTag());
-            tridentNbt.method_25927("trident_uuid", uuid);
-            tridentsNbt.add(tridentNbt);
-        });
+        for (TridentEntry trident : this.ownedTridents.values()) {
+            tridentsNbt.add(trident.toNbt(new CompoundTag()));
+        }
         ownerNbt.put("tridents", tridentsNbt);
     }
 }

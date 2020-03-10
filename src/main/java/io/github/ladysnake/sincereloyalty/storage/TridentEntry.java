@@ -5,6 +5,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 public abstract class TridentEntry {
     @Nullable
     public static TridentEntry fromNbt(ServerWorld world, CompoundTag tag) {
@@ -12,7 +14,7 @@ public abstract class TridentEntry {
             switch (tag.getString("type")) {
                 case "world": return new WorldTridentEntry(world, tag);
                 case "inventory": return new InventoryTridentEntry(world, tag);
-                default:
+                default: // pass
             }
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -21,13 +23,26 @@ public abstract class TridentEntry {
     }
 
     protected final ServerWorld world;
+    protected final UUID tridentUuid;
 
-    TridentEntry(ServerWorld world) {
+    TridentEntry(ServerWorld world, UUID tridentUuid) {
         this.world = world;
+        this.tridentUuid = tridentUuid;
+    }
+
+    TridentEntry(ServerWorld world, CompoundTag nbt) {
+        this(world, nbt.method_25926("trident_uuid"));
+    }
+
+    public UUID getTridentUuid() {
+        return tridentUuid;
     }
 
     @Nullable
     public abstract TridentEntity findTrident();
 
-    public abstract CompoundTag toNbt(CompoundTag nbt);
+    public CompoundTag toNbt(CompoundTag nbt) {
+        nbt.method_25927("trident_uuid", this.tridentUuid);
+        return nbt;
+    }
 }

@@ -28,6 +28,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.PersistentState;
@@ -101,7 +102,7 @@ public final class LoyalTridentStorage extends PersistentState {
 
             ((LoyalTrident) trident).loyaltrident_setReturnSlot(player.inventory.selectedSlot);
             this.world.playSound(player, trident.getX(), trident.getY(), trident.getZ(), SoundEvents.ITEM_TRIDENT_RETURN, trident.getSoundCategory(), 2.0f, 0.7f);
-            ServerSidePacketRegistry.INSTANCE.sendToPlayer(player, new PlaySoundIdS2CPacket(SoundEvents.ITEM_TRIDENT_RETURN.getId(), trident.getSoundCategory(), trident.getPos(), trident.distanceTo(player) / 8, 0.7f));
+            ServerSidePacketRegistry.INSTANCE.sendToPlayer(player, new PlaySoundIdS2CPacket(new Identifier("item.trident.return"), trident.getSoundCategory(), trident.getPos(), trident.distanceTo(player) / 8, 0.7f));
             foundAny = true;
         }
         return foundAny;

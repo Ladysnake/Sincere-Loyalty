@@ -13,20 +13,21 @@ public final class WorldTridentEntry extends TridentEntry {
     private UUID tridentEntityUuid;
     private BlockPos lastPos;
 
-    public WorldTridentEntry(ServerWorld world, UUID tridentEntityUuid, BlockPos lastPos) {
-        super(world);
+    public WorldTridentEntry(ServerWorld world, UUID tridentUuid, UUID tridentEntityUuid, BlockPos lastPos) {
+        super(world, tridentUuid);
         this.tridentEntityUuid = tridentEntityUuid;
         this.lastPos = lastPos;
     }
 
     public WorldTridentEntry(ServerWorld world, CompoundTag tag) {
-        super(world);
+        super(world, tag);
         this.tridentEntityUuid = tag.method_25926("trident_entity_uuid");
         this.lastPos = NbtHelper.toBlockPos(tag.getCompound("last_pos"));
     }
 
     @Override
     public CompoundTag toNbt(CompoundTag nbt) {
+        super.toNbt(nbt);
         nbt.method_25927("trident_entity_uuid", this.tridentEntityUuid);
         nbt.put("last_pos", NbtHelper.fromBlockPos(this.lastPos));
         return nbt;
