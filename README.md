@@ -28,9 +28,9 @@ repositories {
 }
 
 dependencies {
-    modImplementation "io.github.ladysnake:SincereLoyalty:${pal_version}"
-    include "io.github.ladysnake:SincereLoyalty:${pal_version}"
+    modImplementation "io.github.ladysnake:SincereLoyalty:${sl_version}"
+    include "io.github.ladysnake:Sincere-Loyalty:${sl_version}"
 }
 ```
 
-You can find the current version of Sincere Loyalty in the [releases](https://github.com/Ladysnake/PlayerAbilityLib/releases) tab of the repository on Github.
+You can find the current version of Sincere Loyalty in the [releases](https://github.com/Ladysnake/Sincere-Loyalty/releases) tab of the repository on Github.
