@@ -25,6 +25,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.tag.Tag;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 
 public final class SincereLoyalty implements ModInitializer {
@@ -58,6 +59,7 @@ public final class SincereLoyalty implements ModInitializer {
                         if (loyalTridentStorage.recallTridents(player)) {
                             newRecallStatus = TridentRecaller.RecallStatus.RECALLING;
                         } else {
+                            player.addMessage(new TranslatableText("sincere-loyalty:trident_recall_fail"), true);
                             newRecallStatus = TridentRecaller.RecallStatus.NONE;
                         }
                     } else {

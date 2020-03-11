@@ -63,7 +63,7 @@ public abstract class ItemStackMixin {
     private static void editTooltip(List<Text> lines, CompoundTag enchantmentNbt, Enchantment enchantment, CallbackInfo info) {
         if (enchantment == Enchantments.LOYALTY && trueOwnerName != null) {
             if (!lines.isEmpty()) {
-                lines.get(lines.size() - 1).append(new LiteralText(" ")).append(new TranslatableText("sincereloyalty.tooltip.owned_by", trueOwnerName).formatted(Formatting.DARK_GRAY));
+                lines.get(lines.size() - 1).append(new LiteralText(" ")).append(new TranslatableText("sincere-loyalty:tooltip.owned_by", trueOwnerName).formatted(Formatting.DARK_GRAY));
             }
             trueOwnerName = null;
         }
