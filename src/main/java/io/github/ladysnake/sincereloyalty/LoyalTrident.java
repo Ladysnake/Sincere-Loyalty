@@ -40,8 +40,12 @@ public interface LoyalTrident {
         return ((LoyalTrident) trident);
     }
 
+    @Nullable
     static UUID getTridentUuid(ItemStack stack) {
-        CompoundTag loyaltyData = stack.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY);
+        CompoundTag loyaltyData = stack.getSubTag(LoyalTrident.MOD_NBT_KEY);
+        if (loyaltyData == null || !loyaltyData.containsUuidNew(TRIDENT_OWNER_NBT_KEY)) {
+            return null;
+        }
         if (!loyaltyData.containsUuidNew(TRIDENT_UUID_NBT_KEY)) {
             loyaltyData.putUuidNew(LoyalTrident.TRIDENT_UUID_NBT_KEY, UUID.randomUUID());
         }
@@ -93,7 +97,6 @@ public interface LoyalTrident {
                     trident.setVelocity(thrower.getVelocity());
                     trident.copyPositionAndRotation(thrower);
                     thrower.world.spawnEntity(trident);
-                    LoyalTrident.of(trident).loyaltrident_sit();
                     return trident;
                 }
             }

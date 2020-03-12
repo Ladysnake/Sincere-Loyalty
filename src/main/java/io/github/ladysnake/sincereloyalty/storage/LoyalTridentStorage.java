@@ -17,6 +17,7 @@
  */
 package io.github.ladysnake.sincereloyalty.storage;
 
+import com.google.common.base.Preconditions;
 import io.github.ladysnake.sincereloyalty.LoyalTrident;
 import io.github.ladysnake.sincereloyalty.SincereLoyalty;
 import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
@@ -71,6 +72,8 @@ public final class LoyalTridentStorage extends PersistentState {
      * Memorizes a loyal trident that is being held in another player's inventory
      */
     public void memorizeTrident(UUID owner, UUID tridentUuid, PlayerEntity holder) {
+        Preconditions.checkNotNull(owner);
+        Preconditions.checkNotNull(tridentUuid);
         this.tridents.computeIfAbsent(owner, o -> new OwnedTridents(this)).storeTridentHolder(tridentUuid, holder);
     }
 

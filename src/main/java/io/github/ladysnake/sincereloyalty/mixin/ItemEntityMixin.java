@@ -58,6 +58,7 @@ public abstract class ItemEntityMixin extends Entity {
             if (this.veryLoyalTrident) {
                 TridentEntity tridentEntity = LoyalTrident.spawnTridentForStack(this, this.getStack());
                 if (tridentEntity != null) {
+                    LoyalTrident.of(tridentEntity).loyaltrident_sit();
                     this.remove();
                     ci.cancel();
                 }
