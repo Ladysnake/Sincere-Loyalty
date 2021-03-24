@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 public abstract class TridentItemMixin {
     @ModifyVariable(method = "onStoppedUsing", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/TridentEntity;setProperties(Lnet/minecraft/entity/Entity;FFFFF)V"))
     private TridentEntity setTridentReturnSlot(TridentEntity trident, ItemStack stack, World world, LivingEntity user) {
-        LoyalTrident.of(trident).loyaltrident_setReturnSlot(((PlayerEntity) user).inventory.selectedSlot);
+        LoyalTrident.of(trident).loyaltrident_setReturnSlot(((PlayerEntity) user).getInventory().selectedSlot);
         return trident;
     }
 }

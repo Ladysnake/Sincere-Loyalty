@@ -22,9 +22,12 @@ import io.github.ladysnake.sincereloyalty.storage.LoyalTridentStorage;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.projectile.TridentEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.world.World;
@@ -32,9 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -43,14 +44,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(TridentEntity.class)
-public abstract class TridentEntityMixin extends ProjectileEntity implements LoyalTrident {
+public abstract class TridentEntityMixin extends PersistentProjectileEntity implements LoyalTrident {
     @Shadow
     private ItemStack tridentStack;
+    private static final TrackedData<Boolean> sincereLoyalty$SITTING = DataTracker.registerData(TridentEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     private @Nullable Optional<UUID> sincereLoyalty_trueOwner;
 
-    protected TridentEntityMixin(EntityType<? extends ProjectileEntity> entityType, World world) {
+    protected TridentEntityMixin(EntityType<? extends PersistentProjectileEntity> entityType, World world) {
         super(entityType, world);
+    }
+
+    @Inject(method = "initDataTracker", at = @At("RETURN"))
+    private void initDataTracker(CallbackInfo ci) {
+        this.getDataTracker().startTracking(sincereLoyalty$SITTING, false);
     }
 
     @Override
@@ -60,12 +67,12 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
 
     @Override
     public void loyaltrident_sit() {
-        LoyalTrident.addSittingFlag(this.tridentStack);
+        this.getDataTracker().set(sincereLoyalty$SITTING, true);
     }
 
     @Override
     public void loyaltrident_wakeUp() {
-        LoyalTrident.clearSittingFlag(this.tridentStack);
+        this.getDataTracker().set(sincereLoyalty$SITTING, false);
     }
 
     @Override
@@ -74,32 +81,25 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
     }
 
     /**
-     * Calling {@code super.onEntityHit()} causes tridents to behave like arrows, disappearing on contact.
-     * This removes the call, fixing the bug.
-     */
-    @Redirect(method = "onEntityHit", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/ProjectileEntity;onEntityHit(Lnet/minecraft/util/hit/EntityHitResult;)V"))
-    private void fixMojangStupid(ProjectileEntity projectileEntity, EntityHitResult entityHitResult) {
-        // NO-OP
-    }
-
-    /**
      * If the trident was dropped as an item, we want it to stay in place and not immediately return to its owner.
      *
      * <p> This redirects the loyalty check, preventing the trident from going back after it hits something,
      * and preventing it from dropping if the owner dies.
      */
-    @Redirect(
+    @ModifyVariable(
         method = "tick",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/data/DataTracker;get(Lnet/minecraft/entity/data/TrackedData;)Ljava/lang/Object;")
+        slice = @Slice(
+            from = @At(value = "FIELD", target = "Lnet/minecraft/entity/projectile/TridentEntity;LOYALTY:Lnet/minecraft/entity/data/TrackedData;"),
+            to = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/TridentEntity;isOwnerAlive()Z")
+        ),
+        at = @At("STORE")
     )
-    private Object sit(DataTracker self, TrackedData<Byte> trackedData) {
-        if (this.getTrueTridentOwner().isPresent()) {
-            // If your owner told you to sit, you sit (fake no loyalty)
-            if (LoyalTrident.hasSittingFlag(this.tridentStack)) {
-                return (byte) 0;
-            }
+    private int sit(int loyaltyLevel) {
+        // If your owner told you to sit, you sit (fake no loyalty)
+        if (this.getDataTracker().get(sincereLoyalty$SITTING)) {
+            return 0;
         }
-        return self.get(trackedData);
+        return loyaltyLevel;
     }
 
     @Inject(method = "tick", at = @At("RETURN"))
@@ -126,22 +126,26 @@ public abstract class TridentEntityMixin extends ProjectileEntity implements Loy
         return this.sincereLoyalty_trueOwner;
     }
 
-    /**
-     * Clears the sitting flag on the stack, so that loyalty tridents can still work when thrown after being retrieved.
-     *
-     * <p> Note that if the returned stack is immediately dropped, a new sitting trident will be created.
-     */
-    @Inject(method = "asItemStack", at = @At("RETURN"), cancellable = true)
-    private void reenableLoyalty(CallbackInfoReturnable<ItemStack> cir) {
-        LoyalTrident.clearSittingFlag(cir.getReturnValue());
-    }
-
     @Override
-    public void remove() {
-        super.remove();
-        if (!world.isClient) {
+    public void remove(RemovalReason reason) {
+        super.remove(reason);
+        if (!world.isClient && !reason.shouldSave()) {
             this.getTrueTridentOwner().ifPresent(uuid ->
                 LoyalTridentStorage.get(((ServerWorld) this.world)).forgetTrident(uuid, ((TridentEntity) (Object) this)));
+        }
+    }
+
+    @Inject(method = "writeCustomDataToNbt", at = @At("RETURN"))
+    private void writeCustomDataToNbt(CompoundTag tag, CallbackInfo ci) {
+        if (this.getDataTracker().get(sincereLoyalty$SITTING)) {
+            tag.putBoolean(LoyalTrident.TRIDENT_SIT_NBT_KEY, true);
+        }
+    }
+
+    @Inject(method = "readCustomDataFromNbt", at = @At("RETURN"))
+    private void readCustomDataFromNbt(CompoundTag tag, CallbackInfo ci) {
+        if (tag.contains(TRIDENT_SIT_NBT_KEY)) {
+            this.getDataTracker().set(sincereLoyalty$SITTING, tag.getBoolean(TRIDENT_SIT_NBT_KEY));
         }
     }
 }

@@ -25,10 +25,12 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -58,12 +60,12 @@ public abstract class ItemStackMixin {
     }
 
     // inject into the lambda in appendEnchantments
-    @SuppressWarnings("UnresolvedMixinReference")
+    @Dynamic("Lambda method")
     @Inject(method = "method_17869", at = @At("RETURN"))
     private static void editTooltip(List<Text> lines, CompoundTag enchantmentNbt, Enchantment enchantment, CallbackInfo info) {
         if (enchantment == Enchantments.LOYALTY && trueOwnerName != null) {
             if (!lines.isEmpty()) {
-                lines.get(lines.size() - 1).append(new LiteralText(" ")).append(new TranslatableText("sincere-loyalty:tooltip.owned_by", trueOwnerName).formatted(Formatting.DARK_GRAY));
+                ((MutableText) lines.get(lines.size() - 1)).append(new LiteralText(" ")).append(new TranslatableText("sincere-loyalty:tooltip.owned_by", trueOwnerName).formatted(Formatting.DARK_GRAY));
             }
             trueOwnerName = null;
         }

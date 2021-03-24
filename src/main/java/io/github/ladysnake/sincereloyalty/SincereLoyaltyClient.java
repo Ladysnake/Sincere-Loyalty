@@ -19,12 +19,17 @@ package io.github.ladysnake.sincereloyalty;
 
 import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.client.ClientTickCallback;
 import net.fabricmc.fabric.api.network.ClientSidePacketRegistry;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.network.PacketByteBuf;
 import org.jetbrains.annotations.Nullable;
 
 public final class SincereLoyaltyClient implements ClientModInitializer {
@@ -41,19 +46,19 @@ public final class SincereLoyaltyClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ClientTickCallback.EVENT.register(mc -> {
+        ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             TridentRecaller.RecallStatus recalling = tickTridentRecalling(mc);
             if (recalling != null) {
-                PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+                PacketByteBuf buf = PacketByteBufs.create();
                 buf.writeEnumConstant(recalling);
-                ClientSidePacketRegistry.INSTANCE.sendToServer(SincereLoyalty.RECALL_TRIDENTS_MESSAGE_ID, buf);
+                ClientPlayNetworking.send(SincereLoyalty.RECALL_TRIDENTS_MESSAGE_ID, buf);
             }
         });
-        ClientSidePacketRegistry.INSTANCE.register(SincereLoyalty.RECALLING_MESSAGE_ID, (ctx, buf) -> {
+        ClientPlayNetworking.registerGlobalReceiver(SincereLoyalty.RECALLING_MESSAGE_ID, (MinecraftClient client, ClientPlayNetworkHandler handler, PacketByteBuf buf, PacketSender responseSender) -> {
             int playerId = buf.readInt();
             TridentRecaller.RecallStatus recalling = buf.readEnumConstant(TridentRecaller.RecallStatus.class);
-            ctx.getTaskQueue().execute(() -> {
-                Entity player = ctx.getPlayer().world.getEntityById(playerId);
+            client.execute(() -> {
+                Entity player = client.world.getEntityById(playerId);
                 if (player instanceof TridentRecaller) {
                     ((TridentRecaller) player).updateRecallStatus(recalling);
                 }

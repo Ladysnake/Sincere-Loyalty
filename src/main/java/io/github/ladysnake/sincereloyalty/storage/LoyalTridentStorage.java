@@ -20,13 +20,13 @@ package io.github.ladysnake.sincereloyalty.storage;
 import com.google.common.base.Preconditions;
 import io.github.ladysnake.sincereloyalty.LoyalTrident;
 import io.github.ladysnake.sincereloyalty.SincereLoyalty;
-import net.fabricmc.fabric.api.network.ServerSidePacketRegistry;
 import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.TridentEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.packet.s2c.play.PlaySoundIdS2CPacket;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
@@ -44,15 +44,15 @@ public final class LoyalTridentStorage extends PersistentState {
 
     public static LoyalTridentStorage get(ServerWorld world) {
         final String id = SincereLoyalty.MOD_ID + "_trident_storage";
-        return world.getPersistentStateManager().getOrCreate(() -> new LoyalTridentStorage(id, world), id);
+        return world.getPersistentStateManager().getOrCreate(tag -> fromNbt(world, tag), () -> new LoyalTridentStorage(world), id);
     }
 
     /** Player UUID -> Trident UUID -> Trident Position */
     private final Map<UUID, OwnedTridents> tridents = new HashMap<>();
     final ServerWorld world;
 
-    public LoyalTridentStorage(String id, ServerWorld world) {
-        super(id);
+    public LoyalTridentStorage(ServerWorld world) {
+        super();
         this.world = world;
     }
 
@@ -64,7 +64,7 @@ public final class LoyalTridentStorage extends PersistentState {
      * Memorizes a loyal trident that is currently existing in the world
      */
     public void memorizeTrident(UUID owner, TridentEntity trident) {
-        BlockPos tridentPos = trident.getSenseCenterPos();
+        BlockPos tridentPos = trident.getBlockPos();
         this.tridents.computeIfAbsent(owner, o -> new OwnedTridents(this)).storeTridentPosition(LoyalTrident.of(trident).loyaltrident_getTridentUuid(), trident.getUuid(), tridentPos);
     }
 
@@ -100,39 +100,39 @@ public final class LoyalTridentStorage extends PersistentState {
             if (initialDistance > 64) {
                 // reposition the trident at the same angle to the player but only 64 blocks away
                 Vec3d newPos = player.getPos().add(trident.getPos().subtract(player.getPos()).normalize().multiply(64));
-                trident.resetPosition(newPos.x, newPos.y, newPos.z);
+                trident.refreshPositionAfterTeleport(newPos);
             }
 
-            ((LoyalTrident) trident).loyaltrident_setReturnSlot(player.inventory.selectedSlot);
+            ((LoyalTrident) trident).loyaltrident_setReturnSlot(player.getInventory().selectedSlot);
             this.world.playSound(player, trident.getX(), trident.getY(), trident.getZ(), SoundEvents.ITEM_TRIDENT_RETURN, trident.getSoundCategory(), 2.0f, 0.7f);
-            ServerSidePacketRegistry.INSTANCE.sendToPlayer(player, new PlaySoundIdS2CPacket(new Identifier("item.trident.return"), trident.getSoundCategory(), trident.getPos(), trident.distanceTo(player) / 8, 0.7f));
+            ((ServerPlayerEntity) player).networkHandler.connection.send(new PlaySoundIdS2CPacket(new Identifier("item.trident.return"), trident.getSoundCategory(), trident.getPos(), trident.distanceTo(player) / 8, 0.7f));
             foundAny = true;
         }
         return foundAny;
     }
 
-    @Override
-    public void fromTag(CompoundTag tag) {
-        this.tridents.clear();
+    public static LoyalTridentStorage fromNbt(ServerWorld world, CompoundTag tag) {
+        LoyalTridentStorage ret = new LoyalTridentStorage(world);
         ListTag ownersNbt = tag.getList("trident_owners", NbtType.COMPOUND);
         for (int i = 0; i < ownersNbt.size(); i++) {
-            OwnedTridents tridents = new OwnedTridents(this);
+            OwnedTridents tridents = new OwnedTridents(ret);
             CompoundTag ownerNbt = ownersNbt.getCompound(i);
-            UUID ownerUuid = ownerNbt.getUuidNew("owner_uuid");
+            UUID ownerUuid = ownerNbt.getUuid("owner_uuid");
             tridents.fromTag(ownerNbt);
-            this.tridents.put(ownerUuid, tridents);
+            ret.tridents.put(ownerUuid, tridents);
         }
+        return ret;
     }
 
     @NotNull
     @Override
-    public CompoundTag toTag(CompoundTag tag) {
+    public CompoundTag writeNbt(CompoundTag tag) {
         if (!this.tridents.isEmpty()) {
             ListTag ownersNbt = new ListTag();
             this.tridents.forEach((ownerUuid, tridents) -> {
                 if (!tridents.isEmpty()) {
                     CompoundTag ownerNbt = new CompoundTag();
-                    ownerNbt.putUuidNew("owner_uuid", ownerUuid);
+                    ownerNbt.putUuid("owner_uuid", ownerUuid);
                     tridents.toTag(ownerNbt);
                     ownersNbt.add(ownerNbt);
                 }

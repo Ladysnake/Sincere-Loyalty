@@ -36,13 +36,13 @@ public class InventoryTridentEntry extends TridentEntry {
 
     InventoryTridentEntry(ServerWorld world, CompoundTag tag) {
         super(world, tag);
-        this.playerUuid = tag.getUuidNew("player_uuid");
+        this.playerUuid = tag.getUuid("player_uuid");
     }
 
     @Override
     public CompoundTag toNbt(CompoundTag nbt) {
         super.toNbt(nbt);
-        nbt.putUuidNew("player_uuid", this.playerUuid);
+        nbt.putUuid("player_uuid", this.playerUuid);
         return nbt;
     }
 
@@ -50,14 +50,14 @@ public class InventoryTridentEntry extends TridentEntry {
     public TridentEntity findTrident() {
         PlayerEntity player = this.world.getPlayerByUuid(this.playerUuid);
         if (player != null) {
-            for (int slot = 0; slot < player.inventory.getInvSize(); slot++) {
-                ItemStack stack = player.inventory.getInvStack(slot);
+            for (int slot = 0; slot < player.getInventory().size(); slot++) {
+                ItemStack stack = player.getInventory().getStack(slot);
                 CompoundTag loyaltyData = stack.getSubTag(LoyalTrident.MOD_NBT_KEY);
-                if (loyaltyData != null && loyaltyData.containsUuidNew(LoyalTrident.TRIDENT_UUID_NBT_KEY)) {
-                    if (loyaltyData.getUuidNew(LoyalTrident.TRIDENT_UUID_NBT_KEY).equals(this.tridentUuid)) {
+                if (loyaltyData != null && loyaltyData.containsUuid(LoyalTrident.TRIDENT_UUID_NBT_KEY)) {
+                    if (loyaltyData.getUuid(LoyalTrident.TRIDENT_UUID_NBT_KEY).equals(this.tridentUuid)) {
                         TridentEntity tridentEntity = LoyalTrident.spawnTridentForStack(player, stack);
                         if (tridentEntity != null) {
-                            player.inventory.removeInvStack(slot);
+                            player.getInventory().removeStack(slot);
                             return tridentEntity;
                         }
                     }

@@ -25,7 +25,7 @@ import net.fabricmc.fabric.api.server.PlayerStream;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.PacketByteBuf;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Mixin;
@@ -54,7 +54,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements TridentR
             this.recallingTrident = recallingTrident;
             if (!this.world.isClient) {
                 PacketByteBuf res = new PacketByteBuf(Unpooled.buffer());
-                res.writeInt(this.getEntityId());
+                res.writeInt(this.getId());
                 res.writeEnumConstant(recallingTrident);
                 Stream.concat(Stream.of(this), PlayerStream.watching(this))
                     .forEach(p -> ServerSidePacketRegistry.INSTANCE.sendToPlayer((PlayerEntity) p, SincereLoyalty.RECALLING_MESSAGE_ID, res));

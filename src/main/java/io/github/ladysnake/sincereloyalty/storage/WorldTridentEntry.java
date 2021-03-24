@@ -38,14 +38,14 @@ public final class WorldTridentEntry extends TridentEntry {
 
     public WorldTridentEntry(ServerWorld world, CompoundTag tag) {
         super(world, tag);
-        this.tridentEntityUuid = tag.getUuidNew("trident_entity_uuid");
+        this.tridentEntityUuid = tag.getUuid("trident_entity_uuid");
         this.lastPos = NbtHelper.toBlockPos(tag.getCompound("last_pos"));
     }
 
     @Override
     public CompoundTag toNbt(CompoundTag nbt) {
         super.toNbt(nbt);
-        nbt.putUuidNew("trident_entity_uuid", this.tridentEntityUuid);
+        nbt.putUuid("trident_entity_uuid", this.tridentEntityUuid);
         nbt.put("last_pos", NbtHelper.fromBlockPos(this.lastPos));
         return nbt;
     }

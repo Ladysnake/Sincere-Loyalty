@@ -1,3 +1,4 @@
 {
-  "sincereloyalty.tooltip.owned_by": "(envers %s)"
+  "sincere-loyalty:tooltip.owned_by": "(envers %s)",
+  "sincere-loyalty:trident_recall_fail": "Le rappel de vos tridents a échoué"
 }

@@ -26,10 +26,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.screen.BlockContext;
 import net.minecraft.screen.ForgingScreenHandler;
+import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.SmithingScreenHandler;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -41,15 +42,15 @@ import java.util.Map;
 
 @Mixin(SmithingScreenHandler.class)
 public abstract class SmithingScreenHandlerMixin extends ForgingScreenHandler {
-    public SmithingScreenHandlerMixin(ScreenHandlerType<?> containerType, int i, PlayerInventory playerInventory, BlockContext blockContext) {
-        super(containerType, i, playerInventory, blockContext);
+    public SmithingScreenHandlerMixin(@Nullable ScreenHandlerType<?> type, int syncId, PlayerInventory playerInventory, ScreenHandlerContext context) {
+        super(type, syncId, playerInventory, context);
     }
 
     @Inject(method = "canTakeOutput", at = @At("RETURN"), cancellable = true)
     private void canTakeResult(PlayerEntity playerEntity, boolean resultNonEmpty, CallbackInfoReturnable<Boolean> cir) {
         if (resultNonEmpty && !cir.getReturnValueZ()) {
-            ItemStack item = this.input.getInvStack(0);
-            ItemStack upgradeItem = this.input.getInvStack(1);
+            ItemStack item = this.input.getStack(0);
+            ItemStack upgradeItem = this.input.getStack(1);
             cir.setReturnValue(SincereLoyalty.TRIDENTS.contains(item.getItem()) && SincereLoyalty.LOYALTY_CATALYSTS.contains(upgradeItem.getItem()));
         }
     }
@@ -59,22 +60,22 @@ public abstract class SmithingScreenHandlerMixin extends ForgingScreenHandler {
         slice = @Slice(from = @At(value = "FIELD", target = "Lnet/minecraft/item/ItemStack;EMPTY:Lnet/minecraft/item/ItemStack;")),
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/inventory/Inventory;setInvStack(ILnet/minecraft/item/ItemStack;)V"
+            target = "Lnet/minecraft/inventory/CraftingResultInventory;setStack(ILnet/minecraft/item/ItemStack;)V"
         )
     )
     private ItemStack updateResult(ItemStack initialResult) {
         if (initialResult.isEmpty()) {
-            ItemStack item = this.input.getInvStack(0);
-            ItemStack upgradeItem = this.input.getInvStack(1);
+            ItemStack item = this.input.getStack(0);
+            ItemStack upgradeItem = this.input.getStack(1);
             if (SincereLoyalty.TRIDENTS.contains(item.getItem()) && SincereLoyalty.LOYALTY_CATALYSTS.contains(upgradeItem.getItem())) {
-                Map<Enchantment, Integer> enchantments = EnchantmentHelper.getEnchantments(item);
-                if (enchantments.getOrDefault(Enchantments.LOYALTY, 0) == Enchantments.LOYALTY.getMaximumLevel()) {
+                Map<Enchantment, Integer> enchantments = EnchantmentHelper.get(item);
+                if (enchantments.getOrDefault(Enchantments.LOYALTY, 0) == Enchantments.LOYALTY.getMaxLevel()) {
                     ItemStack result = item.copy();
                     // we can mutate the map as it is recreated with every call to getEnchantments
-                    enchantments.put(Enchantments.LOYALTY, Enchantments.LOYALTY.getMaximumLevel() + 1);
+                    enchantments.put(Enchantments.LOYALTY, Enchantments.LOYALTY.getMaxLevel() + 1);
                     EnchantmentHelper.set(enchantments, result);
                     CompoundTag loyaltyData = result.getOrCreateSubTag(LoyalTrident.MOD_NBT_KEY);
-                    loyaltyData.putUuidNew(LoyalTrident.TRIDENT_OWNER_NBT_KEY, this.player.getUuid());
+                    loyaltyData.putUuid(LoyalTrident.TRIDENT_OWNER_NBT_KEY, this.player.getUuid());
                     loyaltyData.putString(LoyalTrident.OWNER_NAME_NBT_KEY, this.player.getEntityName());
                     return result;
                 }

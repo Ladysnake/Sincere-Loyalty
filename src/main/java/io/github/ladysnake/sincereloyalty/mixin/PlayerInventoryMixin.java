@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 public abstract class PlayerInventoryMixin {
 
     @Shadow
-    public abstract ItemStack getInvStack(int slot);
+    public abstract ItemStack getStack(int slot);
 
     @Shadow
     @Final
@@ -46,7 +46,7 @@ public abstract class PlayerInventoryMixin {
         if (tag != null) {
             if (tag.contains(LoyalTrident.RETURN_SLOT_NBT_KEY)) {
                 int preferredSlot = tag.getInt(LoyalTrident.RETURN_SLOT_NBT_KEY);
-                if (this.getInvStack(preferredSlot).isEmpty()) {
+                if (this.getStack(preferredSlot).isEmpty()) {
                     return preferredSlot;
                 }
             }
