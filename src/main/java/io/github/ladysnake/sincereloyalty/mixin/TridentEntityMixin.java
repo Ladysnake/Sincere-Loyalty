@@ -119,7 +119,7 @@ public abstract class TridentEntityMixin extends PersistentProjectileEntity impl
         if (this.sincereLoyalty_trueOwner == null) {
             this.sincereLoyalty_trueOwner = Optional.ofNullable(LoyalTrident.getTrueOwner(this.tridentStack));
             // Not the owner == no loyalty
-            if (!Objects.equals(sincereLoyalty_trueOwner.orElse(null), ((ProjectileAccessor) this).getOwnerUuid())) {
+            if (sincereLoyalty_trueOwner.isPresent() && !sincereLoyalty_trueOwner.get().equals(((ProjectileAccessor) this).getOwnerUuid())) {
                 this.loyaltrident_sit();
             }
         }
